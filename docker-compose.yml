@@ -1,0 +1,40 @@
+version: '3.8'
+
+services:
+  fastapi-service:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.api
+    container_name: supermarket_forecasting_api
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    environment:
+      - ENV=production
+      - LOG_LEVEL=info
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+    networks:
+      - supermarket-network
+
+  streamlit-dashboard:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.dashboard
+    container_name: supermarket_forecasting_dashboard
+    restart: unless-stopped
+    ports:
+      - "8501:8501"
+    environment:
+      - API_URL=http://fastapi-service:8000
+    depends_on:
+      - fastapi-service
+    networks:
+      - supermarket-network
+
+networks:
+  supermarket-network:
+    driver: bridge
